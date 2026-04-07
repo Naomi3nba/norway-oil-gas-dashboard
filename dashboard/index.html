@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Norway Oil & Gas Dashboard</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  /* ── RESET & BASE ─────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #17181a;
+    --bg-card:   #1e1f22;
+    --bg-header: #111213;
+    --border:    #2a2b2e;
+    --text-white:#ffffff;
+    --text-gray: #626365;
+    --green:     #07b178;
+    --green-dark:#0f6e56;
+    --green-base:#1d9e75;
+    --blue-base: #356fa9;
+    --blue-dark: #185fa5;
+    --ngl:       #8b6914;
+    --red:       #e24b4a;
+    --font:      'Segoe UI', system-ui, sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text-white);
+    font-family: var(--font);
+    font-size: 13px;
+    min-height: 100vh;
+  }
+
+  /* ── LAYOUT ───────────────────────────────────────────────── */
+  .dashboard { max-width: 1400px; margin: 0 auto; padding: 0; }
+
+  /* ── HEADER ───────────────────────────────────────────────── */
+  .header {
+    background: var(--bg-header);
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-white);
+    letter-spacing: 0.3px;
+  }
+
+  .header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+
+  .header-meta {
+    font-size:11px;
+    color: var(--text-gray);
+  }
+
+  /* ── TABS ─────────────────────────────────────────────────── */
+  .tabs-row {
+    background: var(--bg-header);
+    padding: 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 45px;
+    z-index: 99;
+  }
+
+  .tabs { display: flex; }
+
+  .tab {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    padding: 10px 16px;
+    color: var(--text-gray);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+    text-decoration: none;
+  }
+
+  .tab:hover { color: #aaa; }
+  .tab.active { color: var(--green); border-bottom-color: var(--green); }
+
+  /* ── YEAR SELECTOR ────────────────────────────────────────── */
+  .year-selector {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .year-label { font-size: 9px; color: var(--text-gray); }
+
+  #year-select {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--green);
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--font);
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 20px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23626365'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+  }
+
+  #year-select option { background: var(--bg-card); color: var(--text-white); }
+  #year-select option.partial { color: var(--text-gray); }
+
+  /* ── SECTION ──────────────────────────────────────────────── */
+  .section { display: none; padding: 12px 20px 20px; }
+  .section.active { display: block; }
+
+  /* ── KPI ROW ──────────────────────────────────────────────── */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .kpi-card {
+    background: var(--bg-card);
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: grid;
+    grid-template-rows: auto auto auto 1fr auto auto auto;
+    min-height: 120px;
+    position: relative;
+}
+
+.kpi-icon {
+  position: absolute;
+  top: 40px;
+  right: 40px;
+  opacity: 0.85;
+  filter: invert(1)
+}
+
+  .kpi-icon-2 {
+  position: absolute;
+  top: 40px; /* ← aumenta para bajar */
+  right: 40px; /* ← aumenta para mover a la izquierda */
+  opacity: 0.95;
+}
+
+.kpi-icon-3 {
+  position: absolute;
+  top: 40px;
+  right: 40px;
+  opacity: 0.95;
+  filter: invert(1)
+}
+  .kpi-icon-4 {
+  position: absolute;
+  top: 50px; /* ← aumenta para bajar */
+  right: 40px; /* ← aumenta para mover a la izquierda */
+  opacity: 0.95;
+}
+
+  .kpi-label {
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text-gray);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 6px;
+  }
+
+  .kpi-sublabel {
+    font-size: 8px;
+    color: var(--text-gray);
+    margin-bottom: 3px;
+  }
+
+  .kpi-value {
+  font-size: 38px;
+  font-weight: 700;
+  color: var(--text-white);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.kpi-unit {
+  font-size: 14px;
+  color: var(--text-white);
+  margin-bottom: 8px;
+}
+
+.kpi-green { font-size: 12px; color: var(--green); margin-top: 3px; }
+.kpi-red   { font-size: 12px; color: var(--red);   margin-top: 3px; }
+
+  /* ── CHARTS GRID ──────────────────────────────────────────── */
+  .charts-grid {
+    display: grid;
+  grid-template-columns: 60% 1fr;
+  gap: 10px;
+  align-items: stretch;
+  }
+
+  .charts-left {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+  .chart-card {
+    background: var(--bg-card);
+    border-radius: 8px;
+    padding: 14px;
+  }
+
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+
+  .chart-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-gray);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .chart-legend {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .leg {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 8px;
+    color: var(--text-gray);
+  }
+
+  .leg-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .leg-dash {
+    width: 16px;
+    border-bottom: 2px dashed var(--blue-base);
+    opacity: 0.8;
+  }
+
+  .chart-canvas-wrap { position: relative; height: 160px}
+  .chart-canvas-wrap-sm { position: relative; height: 130px; }
+
+  /* ── BOTTOM CHARTS ────────────────────────────────────────── */
+  .charts-bottom {
+    display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  max-width: 100%;
+  }
+
+  /* ── DONUT SECTION ────────────────────────────────────────── */
+  .donut-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding-top: 4px;
+    height: 115px;
+  }
+
+  .donut-canvas-wrap { position: relative; width: 110px; height: 110px; flex-shrink: 0; }
+
+  .donut-legend { display: flex; flex-direction: column; gap: 14px; }
+
+  .donut-leg-item { display: flex; align-items: center; gap: 10px; }
+
+  .donut-leg-icon { width: 24px; height: 24px; flex-shrink: 0; }
+
+  .donut-leg-text { display: flex; flex-direction: column; gap: 1px; }
+  .donut-leg-label { font-size: 10px; color: var(--text-gray); }
+  .donut-leg-val { font-size: 13px; font-weight: 700; }
+
+  /* ── MAP PANEL ────────────────────────────────────────────── */
+  .map-panel {
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-self: start;
+  }
+
+  .map-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-gray);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+  }
+
+  .map-svg-wrap {
+    flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  overflow: hidden;
+  }
+
+  .map-legend { flex-shrink: 0; }
+
+  .map-leg-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2px;
+  }
+
+  .map-leg-label { font-size: 8px; color: var(--text-gray); }
+  .map-leg-val   { font-size: 8px; font-weight: 600; color: var(--text-white); }
+
+  .map-leg-bar {
+    height: 3px;
+    border-radius: 2px;
+    margin-bottom: 5px;
+  }
+
+  /* ── SCROLL BUTTON ────────────────────────────────────────── */
+  .scroll-btn-wrap { display: flex; justify-content: center; margin-top: 16px; }
+
+  .scroll-btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    color: var(--text-gray);
+    font-size: 9px;
+    font-family: var(--font);
+    padding: 6px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+
+  .scroll-btn:hover { color: var(--green); border-color: var(--green); }
+
+  /* ── PARTIAL YEAR WARNING ─────────────────────────────────── */
+  .partial-warning {
+    display: none;
+    background: #2a2205;
+    border: 1px solid #5a4210;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 9px;
+    color: #8b6914;
+    margin-bottom: 10px;
+  }
+
+  .partial-warning.visible { display: block; }
+
+  /* ── DATA UNAVAILABLE ─────────────────────────────────────── */
+  .data-unavailable {
+    font-size: 9px;
+    color: #8b6914;
+    margin-top: 3px;
+  }
+
+  /* ── DIVIDER ──────────────────────────────────────────────── */
+  .section-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0 0 12px;
+  }
+</style>
+</head>
+<body>
+
+<div class="dashboard">
+
+  <!-- ── HEADER ───────────────────────────────────────────── -->
+  <div class="header">
+    <div class="header-title">Norway Oil &amp; Gas Dashboard</div>
+    <div class="header-right">
+      <div class="header-meta"><span style="color:var(--green)" id="header-updated">Updated: — · Source: SODIR</span></div>
+      <div class="header-meta"><span style="color:var(--green)">By Naomi3nba on GitHub</span></div>
+    </div>
+  </div>
+
+  <!-- ── TABS + YEAR SELECTOR ─────────────────────────────── -->
+  <div class="tabs-row">
+    <div class="tabs">
+      <a class="tab active" href="#" onclick="showSection('overview', this)">OVERVIEW</a>
+      <a class="tab" href="#" onclick="showSection('production', this)">PRODUCTION</a>
+      <a class="tab" href="#" onclick="showSection('reserves', this)">RESERVES</a>
+      <a class="tab" href="#" onclick="showSection('investment', this)">INVESTMENT</a>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       OVERVIEW SECTION
+  ══════════════════════════════════════════════════════════ -->
+  <div id="section-overview" class="section active">
+
+    <div class="partial-warning" id="partial-warning">
+      ⚠ Partial year — data not complete for selected year.
+    </div>
+
+    <!-- KPIs -->
+    <div class="kpi-row">
+
+  <div class="kpi-card">
+    <img class="kpi-icon" src="https://www.svgrepo.com/show/308310/oil-well-energy-fuel-industry.svg" width="94" height="94">
+    <div class="kpi-label">Active Fields</div>
+    <div class="kpi-value" id="kpi-active">—</div>
+    <div class="kpi-unit">of <span id="kpi-total">—</span> total</div>
+    <div></div>
+    <div class="kpi-green">Transitional: <span id="kpi-transitional">—</span></div>
+    <div class="kpi-green">Not active: <span id="kpi-inactive">—</span></div>
+    <div class="kpi-green">Year: Last Updated</div>
+  </div>
+
+  <div class="kpi-card">
+    <svg class="kpi-icon-2" width="94" height="94" viewBox="0 0 52 52" fill="none">
+    <path d="M26 6 C26 6 11 21 11 32 C11 40.8 17.8 47 26 47 C34.2 47 41 40.8 41 32 C41 21 26 6 26 6Z" stroke="white" stroke-width="1.8" fill="white" fill-opacity="0.12"/>
+    <text x="26" y="37" text-anchor="middle" font-size="10" fill="white" font-weight="700" font-family="Segoe UI,sans-serif" letter-spacing="0.5">OIL</text>
+    </svg>
+    <div class="kpi-label">Total Oil Produced</div>
+    <div class="kpi-value" id="kpi-oil">—</div>
+    <div class="kpi-unit">Mill Sm³</div>
+    <div></div>
+    <div class="kpi-green" style="display:flex;align-items:center;gap:6px">
+      Year:
+      <select id="year-select-kpi" onchange="onYearChange(this.value)" style="background:#17181a;border:1px solid var(--border);color:var(--green);font-size:9px;padding:2px 4px;border-radius:3px;font-family:var(--font)">
+    </select>
+  </div>
+  <div class="kpi-green" id="kpi-oil-bbl">—</div>
+  <div id="kpi-oil-pct-wrap" class="kpi-green">—</div>
+  </div>
+
+  <div class="kpi-card">
+    <img class="kpi-icon-3" src="https://www.svgrepo.com/show/320146/oil-drum.svg" width="94" height="94">
+    <div class="kpi-label">Remaining Reserves</div>
+    <div class="kpi-value" id="kpi-remaining">—</div>
+    <div class="kpi-unit">Mill Sm³</div>
+    <div></div>
+    <div class="kpi-green" id="kpi-reserves-date">Last year available —</div>
+    <div class="kpi-green">Recoverable: <span id="kpi-recoverable">—</span> Mill Sm³</div>
+    <div class="kpi-green">&nbsp;</div>
+  </div>
+
+  <div class="kpi-card">
+     <svg class="kpi-icon-4" width="94" height="94" viewBox="0 0 64 42" fill="none">
+     <rect x="2" y="2" width="60" height="38" rx="4" fill="white" opacity="0.9"/>
+     <circle cx="10" cy="10" r="3.5" fill="#1e1f22"/>
+     <circle cx="54" cy="10" r="3.5" fill="#1e1f22"/>
+     <circle cx="10" cy="32" r="3.5" fill="#1e1f22"/>
+     <circle cx="54" cy="32" r="3.5" fill="#1e1f22"/>
+     <circle cx="32" cy="21" r="17" fill="#1e1f22"/>
+     <circle cx="32" cy="21" r="14" fill="#1e1f22" stroke="white" stroke-width="1" stroke-opacity="0.3"/>
+     <text x="32" y="25" text-anchor="middle" font-size="11" fill="white" font-weight="800" font-family="Segoe UI,sans-serif" letter-spacing="0.5">NOK</text>
+     <circle cx="14" cy="21" r="2" fill="#1e1f22"/>
+     <circle cx="50" cy="21" r="2" fill="#1e1f22"/>
+     </svg>
+    <div class="kpi-label">Investment</div>
+    <div class="kpi-value" id="kpi-inv">—</div>
+    <div class="kpi-unit">Mill NOK</div>
+    <div></div>
+    <div class="kpi-green" id="kpi-inv-year-label">Last year available —</div>
+    <div class="kpi-green" id="kpi-inv-peak"></div>
+    <div id="kpi-inv-pct-wrap" class="kpi-green">—</div>
+  </div>
+
+</div>
+
+    <div class="section-divider"></div>
+
+    <!-- Charts grid -->
+    <div class="charts-grid">
+      <div class="charts-left">
+
+        <!-- Chart 1: Oil production monthly -->
+        <div class="chart-card">
+          <div class="chart-header">
+            <div class="chart-title">Monthly HC Type Production</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <select id="year-select-chart" onchange="onYearChange(this.value)" style="background:#1e1f22;border:1px solid var(--border);color:var(--green);font-size:9px;padding:3px 6px;border-radius:3px;font-family:var(--font)">
+              </select>
+            <div class="chart-legend">
+              <div class="leg"><div class="leg-dot" style="background:var(--green-base)"></div>Oil</div>
+              <div class="leg"><div class="leg-dot" style="background:var(--blue-base)"></div>Gas</div>
+              <div class="leg"><div class="leg-dot" style="background:var(--ngl)"></div>NGL</div>
+            </div>
+          </div>
+        </div>
+          <div class="chart-canvas-wrap">
+            <canvas id="chart-production"></canvas>
+          </div>
+        </div>
+
+        <!-- Bottom row -->
+        <div class="charts-bottom">
+
+          <!-- Chart 2: Investment yearly -->
+          <div class="chart-card">
+            <div class="chart-header" style="flex-direction:column;gap:6px;align-items:flex-start">
+              <div class="chart-title">Investment Yearly (Mill NOK)</div>
+              <div style="font-size:10px;color:var(--green)">Last year available 2024</div>
+            </div>
+            <div class="chart-canvas-wrap-sm">
+              <canvas id="chart-investment"></canvas>
+            </div>
+          </div>
+
+          <!-- Chart 3: HC Type donut -->
+          <div class="chart-card">
+            <div class="chart-title" style="margin-bottom:4px">Fields by HC type</div>
+            <div style="font-size:10px;color:var(--green);margin-bottom:6px">Year: Present</div>
+            <div class="donut-wrap">
+              <div class="donut-canvas-wrap">
+                <canvas id="chart-hc"></canvas>
+              </div>
+              <div class="donut-legend">
+                <div class="donut-leg-item">
+                  <!-- Oil barrel icon -->
+                  <svg class="donut-leg-icon" viewBox="0 0 24 24" fill="none">
+                    <ellipse cx="12" cy="5"  rx="8" ry="3" stroke="#1d9e75" stroke-width="1.4" fill="#1d9e75" fill-opacity="0.2"/>
+                    <rect x="4" y="5" width="16" height="14" stroke="#1d9e75" stroke-width="1.4" fill="#1d9e75" fill-opacity="0.1"/>
+                    <ellipse cx="12" cy="19" rx="8" ry="3" stroke="#1d9e75" stroke-width="1.4" fill="#1d9e75" fill-opacity="0.2"/>
+                    <line x1="4" y1="9"  x2="20" y2="9"  stroke="#1d9e75" stroke-width="0.8" stroke-dasharray="2 2"/>
+                    <line x1="4" y1="15" x2="20" y2="15" stroke="#1d9e75" stroke-width="0.8" stroke-dasharray="2 2"/>
+                    <path d="M12 9.5 C12 9.5 10.5 11.5 10.5 13 C10.5 13.8 11.2 14.5 12 14.5 C12.8 14.5 13.5 13.8 13.5 13 C13.5 11.5 12 9.5 12 9.5Z" fill="#1d9e75" opacity="0.9"/>
+                  </svg>
+                  <div class="donut-leg-text">
+                    <div class="donut-leg-label">Oil</div>
+                    <div class="donut-leg-val" id="hc-oil-val" style="color:var(--green-base)">—</div>
+                  </div>
+                </div>
+                <div class="donut-leg-item">
+                  <!-- Gas flame icon -->
+                  <svg class="donut-leg-icon" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2C12 2 6 9 6 14a6 6 0 0 0 12 0C18 9 12 2 12 2z" stroke="#356fa9" stroke-width="1.4" fill="#356fa9" fill-opacity="0.15"/>
+                    <path d="M12 10C12 10 9.5 13 9.5 15a2.5 2.5 0 0 0 5 0C14.5 13 12 10 12 10z" stroke="#356fa9" stroke-width="1.1" fill="#356fa9" fill-opacity="0.3"/>
+                  </svg>
+                  <div class="donut-leg-text">
+                    <div class="donut-leg-label">Gas</div>
+                    <div class="donut-leg-val" id="hc-gas-val" style="color:var(--blue-base)">—</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Map panel -->
+      <div class="map-panel" style="max-height: 405px">
+        <div class="map-title">Active fields by sea area</div>
+        <div style="font-size:10px;color:var(--green);margin-bottom:6px">Year: Present</div>
+        <div id="norway-map" style="border-radius:6px;height:350px;width:100%"></div>
+        <div class="map-legend" style="margin-top:8px">
+        <div class="map-leg-row">
+        <span class="map-leg-label">North Sea</span>
+        <span class="map-leg-val" id="map-north-label">69</span>
+        </div>
+        <div class="map-leg-bar" style="background:#185fa5;width:100%"></div>
+        <div class="map-leg-row">
+        <span class="map-leg-label">Norwegian Sea</span>
+        <span class="map-leg-val" id="map-norwegian-label">25</span>
+        </div>
+        <div class="map-leg-bar" style="background:#0f3f7a;width:36%"></div>
+        <div class="map-leg-row">
+        <span class="map-leg-label">Barents Sea</span>
+        <span class="map-leg-val" id="map-barents-label">3</span>
+        </div>
+        <div class="map-leg-bar" style="background:#082a52;width:4%"></div>
+      </div>
+    </div>
+
+    <div class="scroll-btn-wrap">
+      <button class="scroll-btn" onclick="showSection('production', document.querySelector('.tab:nth-child(2)'))">
+        ▼ Production
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       PRODUCTION SECTION (placeholder)
+  ══════════════════════════════════════════════════════════ -->
+  <div id="section-production" class="section">
+    <p style="color:var(--text-gray);padding:40px 0;text-align:center">Production — coming soon</p>
+    <div class="scroll-btn-wrap">
+      <button class="scroll-btn" onclick="showSection('reserves', document.querySelector('.tab:nth-child(3)'))">▼ Reserves</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       RESERVES SECTION (placeholder)
+  ══════════════════════════════════════════════════════════ -->
+  <div id="section-reserves" class="section">
+    <p style="color:var(--text-gray);padding:40px 0;text-align:center">Reserves — coming soon</p>
+    <div class="scroll-btn-wrap">
+      <button class="scroll-btn" onclick="showSection('investment', document.querySelector('.tab:nth-child(4)'))">▼ Investment</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       INVESTMENT SECTION (placeholder)
+  ══════════════════════════════════════════════════════════ -->
+  <div id="section-investment" class="section">
+    <p style="color:var(--text-gray);padding:40px 0;text-align:center">Investment — coming soon</p>
+  </div>
+
+</div>
+
+<script>
+// ── GLOBALS ────────────────────────────────────────────────────
+let DATA = null;
+let charts = {};
+let selectedYear = 2025;
+
+// ── LOAD DATA ──────────────────────────────────────────────────
+async function loadData() {
+  try {
+    const res = await fetch('data/json/master.json');
+    DATA = await res.json();
+    init();
+  } catch(e) {
+    console.error('Could not load master.json:', e);
+    document.body.innerHTML += '<div style="color:red;padding:20px">Error loading data. Run pipeline.py first.</div>';
+  }
+}
+
+// ── MAP ──────────────────────────────────────────────────────
+function initMap() {
+  const map = L.map('norway-map', {
+    center: [65, 5],
+    zoom: 4,
+    zoomControl: true,
+    scrollWheelZoom: true
+  });
+
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap © CARTO',
+    subdomains: 'abcd',
+    maxZoom: 10
+  }).addTo(map);
+
+  const seaAreas = [
+    {
+      name: 'North Sea',
+      count: DATA.overview.charts.map.counts[0],
+      color: '#185fa5',
+      opacity: 0.55,
+      coords: [[51,-4],[51,2],[53,5],[56,8],[58,7],[60,4],[62,3],[60,-2],[57,-4]],
+      label: [55, 3]
+    },
+    {
+      name: 'Norwegian Sea',
+      count: DATA.overview.charts.map.counts[1],
+      color: '#0f3f7a',
+      opacity: 0.4,
+      coords: [[62,-4],[62,8],[65,12],[68,10],[70,6],[70,-2],[66,-4]],
+      label: [66, 4]
+    },
+    {
+      name: 'Barents Sea',
+      count: DATA.overview.charts.map.counts[2],
+      color: '#082a52',
+      opacity: 0.25,
+      coords: [[70,14],[70,22],[73,30],[76,35],[78,30],[78,18],[74,12]],
+      label: [74, 22]
+    }
+  ];
+
+  seaAreas.forEach(area => {
+    L.polygon(area.coords, {
+      color: area.color,
+      fillColor: area.color,
+      fillOpacity: area.opacity,
+      weight: 0.5,
+      smoothFactor: 8
+    }).addTo(map)
+      .bindTooltip(`${area.name} — ${area.count} active fields`, {
+        sticky: true
+      });
+
+    L.marker(area.label, {
+      icon: L.divIcon({
+        html: `<div style="
+          color:#07b178;
+          font-weight:700;
+          font-size:14px;
+          text-align:center;
+          font-family:Segoe UI,sans-serif;
+          text-shadow:0 0 6px #000,0 0 3px #000;
+          line-height:1.3;
+        ">
+          <div style="font-size:8px;color:#fff">${area.name}</div>
+          ${area.count}
+        </div>`,
+        className: '',
+        iconSize: [0, 0],
+        iconAnchor: [20, 15]
+      })
+    }).addTo(map);
+  });
+}
+
+// ── INIT ───────────────────────────────────────────────────────
+function init() {
+  populateYearSelector();
+  renderOverview();
+  initMap();  // ← añade esta línea
+  document.getElementById('header-updated').textContent =
+    `Updated: ${DATA.meta.generated_at} · Source: SODIR`;
+}
+
+// ── YEAR SELECTOR ──────────────────────────────────────────────
+function populateYearSelector() {
+  const selectors = ['year-select-kpi', 'year-select-chart'];
+  const years = [...DATA.meta.available_years].reverse();
+  
+  selectors.forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = '';
+    years.forEach(y => {
+      const opt = document.createElement('option');
+      opt.value = y;
+      opt.textContent = y + (DATA.meta.partial_years.includes(y) ? ' ⚠' : '');
+      if (y === DATA.meta.default_year) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  });
+  selectedYear = DATA.meta.default_year;
+}
+
+function onYearChange(year) {
+  selectedYear = parseInt(year);
+  const isPartial = DATA.meta.partial_years.includes(selectedYear);
+  document.getElementById('partial-warning').classList.toggle('visible', isPartial);
+  renderOverview();
+}
+
+// ── SECTION SWITCHING ──────────────────────────────────────────
+function showSection(name, tabEl) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('section-' + name).classList.add('active');
+  if (tabEl) tabEl.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── HELPERS ────────────────────────────────────────────────────
+function fmt(n, dec=2)  { return Number(n).toLocaleString('en-US', {minimumFractionDigits: dec, maximumFractionDigits: dec}); }
+function fmtInt(n)       { return Number(n).toLocaleString('en-US'); }
+function pctArrow(p)     { return (p >= 0 ? '+' : '') + fmt(p,1) + '%'; }
+
+function setPct(elId, pct) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.className = pct >= 0 ? 'kpi-green' : 'kpi-red';
+}
+
+// ── RENDER OVERVIEW ────────────────────────────────────────────
+function renderOverview() {
+  const ov = DATA.overview;
+  const kpis = ov.kpis;
+
+  // KPI 1 — Active fields (static, not year-dependent)
+  const af = kpis.active_fields;
+  document.getElementById('kpi-active').textContent       = fmtInt(af.count ?? '—');
+  document.getElementById('kpi-total').textContent = fmtInt(af.total ?? '—');
+  document.getElementById('kpi-transitional').textContent = fmtInt(af.transitional ?? '—');
+  document.getElementById('kpi-inactive').textContent     = fmtInt(af.inactive ?? '—');
+
+  // KPI 2 — Total oil produced (year-dependent)
+const annualProd = DATA.overview.annual_production;
+const yearData   = annualProd[selectedYear] || annualProd[DATA.meta.default_year];
+const isPartial  = DATA.meta.partial_years.includes(selectedYear);
+
+document.getElementById('kpi-oil').textContent     = fmt(yearData.oil_mill_sm3);
+document.getElementById('kpi-oil-bbl').textContent = fmt(yearData.oil_mill_bbl) + ' Mill bbl';
+
+// Actualizar selectores
+['year-select-kpi', 'year-select-chart'].forEach(id => {
+  const sel = document.getElementById(id);
+  if (sel) sel.value = selectedYear;
+});
+
+const oilPct   = yearData.pct_vs_prev;
+const oilPctEl = document.getElementById('kpi-oil-pct-wrap');
+oilPctEl.textContent = pctArrow(oilPct) + ' vs ' + yearData.prev_year;
+oilPctEl.className   = oilPct >= 0 ? 'kpi-green' : 'kpi-red';
+
+  // KPI 3 — Remaining reserves
+  document.getElementById('kpi-remaining').textContent   = fmtInt(Math.round(kpis.remaining_reserves.remaining_oe_mill_sm3));
+  document.getElementById('kpi-recoverable').textContent = fmtInt(Math.round(kpis.remaining_reserves.recoverable_oe_mill_sm3));
+  document.getElementById('kpi-reserves-date').textContent = 'Last year available 2024';
+
+  // KPI 4 — Investment
+  const inv = DATA.investment.kpis;
+  document.getElementById('kpi-inv').textContent          = fmtInt(inv.last_year.mill_nok);
+  document.getElementById('kpi-inv-year-label').textContent = 'Last year available ' + inv.last_year.year;
+  document.getElementById('kpi-inv-peak').textContent     = inv.last_year.is_peak_year ? '★ Peak year on record' : '';
+  const invPctEl = document.getElementById('kpi-inv-pct-wrap');
+  invPctEl.textContent = pctArrow(inv.last_year.pct_vs_prev) + ' vs ' + (inv.last_year.year - 1);
+  invPctEl.className   = inv.last_year.pct_vs_prev >= 0 ? 'kpi-green' : 'kpi-red';
+
+  // Charts
+  renderProductionChart(selectedYear);
+  renderInvestmentChart(ov.charts.investment_yearly);
+  renderHCChart(ov.charts.hc_type);
+}
+
+// ── CHART 1: PRODUCTION MONTHLY (STACKED) ─────────────────────
+function renderProductionChart(year) {
+  const ctx = document.getElementById('chart-production').getContext('2d');
+  if (charts.production) charts.production.destroy();
+
+  const isPartial = DATA.meta.partial_years.includes(year);
+  let labels, oilData, gasData, nglData;
+
+  if (!isPartial && DATA.overview.charts.monthly_by_year[year]) {
+    const yrData = DATA.overview.charts.monthly_by_year[year];
+    labels  = yrData.labels;
+    oilData = yrData.oil;
+    gasData = yrData.gas;
+    nglData = yrData.ngl;
+  } else {
+    const monthly = DATA.overview.charts.production_monthly;
+    labels  = monthly.labels;
+    oilData = monthly.oil;
+    gasData = monthly.gas;
+    nglData = monthly.ngl;
+  }
+
+  // Normalizar a porcentaje
+  const oilPct  = oilData.map((v, i) => {
+    const total = v + gasData[i] + nglData[i];
+    return total > 0 ? parseFloat((v / total * 100).toFixed(1)) : 0;
+  });
+  const gasPct  = gasData.map((v, i) => {
+    const total = oilData[i] + v + nglData[i];
+    return total > 0 ? parseFloat((v / total * 100).toFixed(1)) : 0;
+  });
+  const nglPct  = nglData.map((v, i) => {
+    const total = oilData[i] + gasData[i] + v;
+    return total > 0 ? parseFloat((v / total * 100).toFixed(1)) : 0;
+  });
+
+  const oilColors = labels.map(() => '#1d9e75');
+  const gasColors = labels.map(() => '#356fa9');
+  const nglColors = labels.map(() => '#8b6914');
+
+  charts.production = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'NGL', data: nglPct, backgroundColor: nglColors, stack: 'stack' },
+        { label: 'Gas', data: gasPct, backgroundColor: gasColors, stack: 'stack' },
+        { label: 'Oil', data: oilPct, backgroundColor: oilColors, stack: 'stack' },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e1f22',
+          borderColor: '#2a2b2e',
+          borderWidth: 1,
+          titleColor: '#ffffff',
+          titleFont: { size: 11, weight: 'bold' },
+          bodyFont: { size: 10 },
+          padding: 10,
+          mode: 'index',
+          intersect: false,
+          callbacks: {
+            title: items => items[0].label,
+            label: ctx => {
+              const i = ctx.dataIndex;
+              const oilV = oilData[i] > 0 ? oilData[i].toFixed(3) + ' Mill Sm³' : '—';
+              const gasV = gasData[i] > 0 ? gasData[i].toFixed(3) + ' Bill Sm³' : '—';
+              const nglV = nglData[i] > 0 ? nglData[i].toFixed(3) + ' Mill Sm³' : '—';
+              if (ctx.dataset.label === 'Oil') return ` Oil:  ${oilV}  (${oilPct[i]}%)`;
+              if (ctx.dataset.label === 'Gas') return ` Gas:  ${gasV}  (${gasPct[i]}%)`;
+              return ` NGL:  ${nglV}  (${nglPct[i]}%)`;
+            },
+            labelColor: ctx => ({
+              borderColor: 'transparent',
+              backgroundColor: ctx.dataset.label === 'Oil' ? '#1d9e75'
+                : ctx.dataset.label === 'Gas' ? '#356fa9' : '#8b6914'
+            })
+          }
+        }
+      },
+      scales: {
+        x: {
+          stacked: true,
+          grid: { display: false },
+          ticks: { color: '#626365', font: { size: 8 }, maxRotation: 0 },
+          border: { color: '#2a2b2e' }
+        },
+        y: {
+          stacked: true,
+          max: 100,
+          grid: { color: '#232426' },
+          ticks: {
+            color: '#626365',
+            font: { size: 8 },
+            callback: v => v + '%'
+          },
+          border: { color: '#2a2b2e' }
+        }
+      }
+    }
+  });
+}
+
+// ── CHART 2: INVESTMENT YEARLY ─────────────────────────────────
+function renderInvestmentChart(data) {
+  const ctx = document.getElementById('chart-investment').getContext('2d');
+  if (charts.investment) charts.investment.destroy();
+
+  const hist  = data.historical;
+  const exp   = data.expected;
+
+  // Last 8 historical years
+  const last8years  = hist.years.slice(-8);
+  const last8values = hist.values.slice(-8);
+
+  const peakYear = DATA.investment.kpis.last_year.peak_year;
+
+  // Combine historical + expected
+  const labels = last8years.map(String);
+
+  const barColors = last8years.map(y =>
+    y === peakYear ? '#185fa5' : '#356fa9'
+  );
+  const barOpacity = last8years.map((_, i) =>
+    0.4 + (i / last8years.length) * 0.6
+  );
+
+  charts.investment = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Historical',
+          data: last8values,
+          backgroundColor: last8years.map((y, i) => {
+            const op = 0.4 + (i / last8years.length) * 0.6;
+            return y === peakYear ? '#185fa5' : `rgba(53,111,169,${op})`;
+          }),
+          borderColor: last8years.map(y => y === peakYear ? '#356fa9' : 'transparent'),
+          borderWidth: last8years.map(y => y === peakYear ? 1 : 0),
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { 
+          display: true,
+          position: 'top',
+          align: 'end',
+          labels: {
+            color: '#626365',
+            font: { size: 8 },
+            boxWidth: 10,
+            boxHeight: 10,
+            filter: item => item.text === 'Historical'
+          },
+        },
+        tooltip: {
+          backgroundColor: '#1e1f22',
+          borderColor: '#2a2b2e',
+          borderWidth: 1,
+          titleColor: '#ffffff',
+          bodyColor: '#626365',
+          callbacks: {
+            label: ctx => ` ${fmtInt(ctx.parsed.y)} Mill NOK`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { color: '#626365', font: { size: 8 }, maxRotation: 0 },
+          border: { color: '#2a2b2e' }
+        },
+        y: {
+          grid: { color: '#232426' },
+          ticks: {
+            color: '#626365',
+            font: { size: 8 },
+            callback: v => (v / 1000).toFixed(0) + 'k'
+          },
+          border: { color: '#2a2b2e' }
+        }
+      }
+    }
+  });
+}
+
+// ── CHART 3: HC TYPE DONUT ─────────────────────────────────────
+function renderHCChart(data) {
+  const ctx = document.getElementById('chart-hc').getContext('2d');
+  if (charts.hc) charts.hc.destroy();
+
+  const oilCount = data.values[0];
+  const gasCount = data.values[1];
+  const total    = oilCount + gasCount;
+  const oilPct   = ((oilCount / total) * 100).toFixed(0);
+  const gasPct   = ((gasCount / total) * 100).toFixed(0);
+
+  document.getElementById('hc-oil-val').textContent = `${oilCount} · ${oilPct}%`;
+  document.getElementById('hc-gas-val').textContent = `${gasCount} · ${gasPct}%`;
+
+  charts.hc = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Oil', 'Gas'],
+      datasets: [{
+        data: [oilCount, gasCount],
+        backgroundColor: ['#1d9e75', '#356fa9'],
+        borderColor: '#1e1f22',
+        borderWidth: 3,
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e1f22',
+          borderColor: '#2a2b2e',
+          borderWidth: 1,
+          titleColor: '#ffffff',
+          bodyColor: '#626365'
+        }
+      }
+    }
+  });
+}
+
+// ── BOOT ───────────────────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>
