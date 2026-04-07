@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+
+# Environment
+oil_norway/
+oil-norway-env/
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Data — raw y clean no se suben (son regenerables con pipeline.py)
+data/raw/
+data/clean/
+
+# JSON sí se sube — es el output del dashboard
+# data/json/ ← se sube
+
+# Logs
+logs/
+
+# VS Code
+.vscode/
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# macOS
+.DS_Store

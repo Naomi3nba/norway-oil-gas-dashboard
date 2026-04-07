@@ -1,0 +1,165 @@
+{
+  "last_updated": "2026-04-06 20:58",
+  "data_as_of": "December 2025",
+  "kpis": {
+    "recoverable_oe": {
+      "mill_sm3": 11217.26,
+      "mill_bbl": 70554.32,
+      "data_as_of": "December 2025"
+    },
+    "remaining_oe": {
+      "mill_sm3": 2249.25,
+      "mill_bbl": 14147.33,
+      "data_as_of": "December 2025"
+    },
+    "produced_to_date": {
+      "mill_sm3": 8968.01,
+      "mill_bbl": 56406.99
+    },
+    "rp_total": {
+      "years": 9.4,
+      "based_on_year": 2025,
+      "data_as_of": "December 2025"
+    }
+  },
+  "charts": {
+    "rp_by_field": {
+      "fields": [
+        "SKULD",
+        "VERDANDE",
+        "SN\u00d8HVIT",
+        "GIMLE",
+        "SIGYN",
+        "SLEIPNER VEST",
+        "GRANE",
+        "VALHALL",
+        "HEIDRUN",
+        "JOHAN CASTBERG",
+        "NJORD",
+        "FRAM",
+        "SNORRE",
+        "TROLL",
+        "OSEBERG S\u00d8R"
+      ],
+      "rp_years": [
+        50.0,
+        38.5,
+        34.2,
+        27.3,
+        17.9,
+        17.0,
+        15.7,
+        14.6,
+        14.3,
+        14.1,
+        13.5,
+        13.5,
+        13.5,
+        13.2,
+        12.8
+      ],
+      "remaining_oe": [
+        1.29,
+        6.85,
+        165.22,
+        0.54,
+        1.26,
+        9.09,
+        27.19,
+        32.76,
+        53.45,
+        88.84,
+        20.81,
+        23.64,
+        67.66,
+        576.32,
+        23.12
+      ],
+      "not_producing": [
+        "ALVE NORD",
+        "BERLING",
+        "BESTLA",
+        "EIRIN",
+        "FENRIS",
+        "FULLA",
+        "HUGIN",
+        "IDUN NORD",
+        "IRPA",
+        "MUNIN",
+        "SYMRA",
+        "TAMBAR \u00d8ST",
+        "VISUND S\u00d8R",
+        "\u00d8RN",
+        "\u00c6RFUGL",
+        "JOTUN "
+      ],
+      "depleted": [
+        "ALBUSKJELL",
+        "ATLA",
+        "BRYNHILD",
+        "COD",
+        "EDDA",
+        "FLYNDRE",
+        "FRAM H-NORD",
+        "FRIGG",
+        "GAUPE",
+        "GLITNE",
+        "GYDA",
+        "HEIMDAL",
+        "HUGIN SATELLITTER",
+        "HULDRA",
+        "ISLAY",
+        "JETTE",
+        "JOTUN",
+        "KNARR",
+        "MIME",
+        "MURCHISON",
+        "NORD\u00d8ST FRIGG",
+        "ODIN",
+        "OSELVAR",
+        "SKIRNE",
+        "TOMMELITEN GAMMA",
+        "TROLL BRENT B",
+        "VALE",
+        "VARG",
+        "VESLEFRIKK",
+        "VEST EKOFISK",
+        "VOLVE",
+        "YTTERGRYTA",
+        "\u00c6RFUGL NORD",
+        "\u00d8ST FRIGG",
+        "FR\u00d8Y",
+        "LILLE-FRIGG",
+        "VEGA S\u00d8R"
+      ],
+      "data_as_of": "December 2025",
+      "cap_note": "Fields with R/P > 50 years displayed as 50+"
+    },
+    "remaining_by_type": {
+      "labels": [
+        "Oil",
+        "Gas",
+        "NGL"
+      ],
+      "values": [
+        776.22,
+        394.34,
+        64.08
+      ],
+      "data_as_of": "December 2025"
+    },
+    "recovery_overview": {
+      "labels": [
+        "Recoverable OE",
+        "Produced to date",
+        "Remaining OE"
+      ],
+      "values": [
+        11217.26,
+        8968.01,
+        2249.25
+      ],
+      "data_as_of": "December 2025"
+    }
+  }
+}
