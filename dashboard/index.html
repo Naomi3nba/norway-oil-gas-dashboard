@@ -655,7 +655,7 @@ let selectedYear = 2025;
 // ── LOAD DATA ──────────────────────────────────────────────────
 async function loadData() {
   try {
-    const res = await fetch('data/json/master.json');
+    const res = await fetch('data/json/master.json?v=' + Date.now());
     DATA = await res.json();
     init();
   } catch(e) {
